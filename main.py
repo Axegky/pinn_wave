@@ -81,6 +81,8 @@ if __name__ == '__main__':
     lbfgs = L_BFGS_B(model=pinn, x_train=x_train, y_train=y_train)
     lbfgs.fit()
 
+    
+
     # predict u(t,x) distribution
     t_flat = np.linspace(0, 4, num_test_samples)
     x_flat = np.linspace(-1, 1, num_test_samples)

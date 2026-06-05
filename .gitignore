@@ -1,0 +1,17 @@
+__pycache__/
+local*
+venv/
+**/logs**/
+data/
+torchfix/
+*.png
+!image.png
+*.h5
+*.mat
+checkpoint
+*workshop*/
+*toolbox*/
+*.job
+*.log
+*.txt
+*.zip
