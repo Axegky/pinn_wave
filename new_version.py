@@ -1,5 +1,4 @@
-import torch
-
+import random
 import lib.tf_silent
 import h5py
 import numpy as np
@@ -81,9 +80,10 @@ class InitialConditionLoader:
 
 
 if __name__ == "__main__":
-    random_seed_name = 21
+    random_seed_name = 123
+    random.seed(random_seed_name)
     np.random.seed(random_seed_name)
-    torch.manual_seed(random_seed_name)
+    tf.random.set_seed(random_seed_name)
 
     params = LinearHomo1D()
     ic_loader = InitialConditionLoader(params)
@@ -122,6 +122,16 @@ if __name__ == "__main__":
     print("PINN inputs:", len(pinn.inputs))
     print(pinn.inputs)
 
+    # designate Adam optimiser and loss function for training
+    optimizer = tf.keras.optimizers.Adam(
+        learning_rate=1e-3
+    )
+
+    pinn.compile(
+        optimizer=optimizer,
+        loss="mse"
+    )
+
     # create training input
     tx_eqn = np.random.rand(num_train_samples, 2)
 
@@ -159,18 +169,24 @@ if __name__ == "__main__":
         du_dt_ini    
     ]
 
-    lbfgs = L_BFGS_B(
-        model=pinn,
-        x_train=x_train,
-        y_train=y_train,
+    history = pinn.fit(
+        x=x_train,
+        y=y_train,
+        epochs=5000,
+        batch_size=num_train_samples,  # full-batch Adam
+        shuffle=False,                 # keep deterministic
+        verbose=1
     )
 
-    lbfgs.fit()
+    # lbfgs = L_BFGS_B(
+    #     model=pinn,
+    #     x_train=x_train,
+    #     y_train=y_train,
+    # )
 
-    # ------------------------------------------------------------------
+    # lbfgs.fit()
+
     # Predict solution
-    # ------------------------------------------------------------------
-
     t_flat = np.linspace(
         0,
         params.t_end,
@@ -201,10 +217,7 @@ if __name__ == "__main__":
     u_pred = u_pred.reshape(t.shape)
     u_pred = u_pred * u_scale
 
-    # ------------------------------------------------------------------
     # Plot predicted field
-    # ------------------------------------------------------------------
-
     fig = plt.figure(figsize=(8, 5))
 
     gs = GridSpec(2, 3)
@@ -229,10 +242,7 @@ if __name__ == "__main__":
     cbar = plt.colorbar(pad=0.05, aspect=10)
     cbar.set_label("u(t,x)")
 
-    # ------------------------------------------------------------------
-    # Cross sections
-    # ------------------------------------------------------------------
-
+    # Cross sections at different time snapshots
     t_cross_sections = [0, 0.5e-5, 1e-5]
 
     for i, t_cs in enumerate(t_cross_sections):
